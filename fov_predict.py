@@ -7,10 +7,10 @@ from pyquaternion import Quaternion
 
 sal_maps_list = []
 time_array_list = []
-FoV_net = convlstm.ConvLSTM_model(input_dim=args.input_size,
-                                  hidden_dim=args.hidden_size,
+FoV_net = convlstm.ConvLSTM_model(input_dim=2,
+                                  hidden_dim=6,
                                   kernel_size=(5, 5),
-                                  num_layers=args.num_layers,
+                                  num_layers=1,
                                   batch_first=True)
 
 
@@ -68,7 +68,6 @@ def get_csv(userId):
     UserFile = './vr-dataset/Experiment_1/' + str(userId) + "/video_1.csv"
     print('Load user\'s excel info from', UserFile)
 
-    t = []
     with open(UserFile) as csvfile:
         csv_reader = csv.reader(csvfile)
         next(csv_reader)
@@ -95,7 +94,7 @@ def get_csv(userId):
 
 if __name__ == '__main__':
     # 载入滑雪视频的显著性数据
-    salPath = args.sal_path + "saliency_ds2_topic1"
+    salPath = "./SalData/saliency_ds2_topic1"
     try:
         saliency_array = np.array(pickle.load(
             open(salPath, 'rb'), encoding='bytes'), dtype=object)
@@ -109,11 +108,7 @@ if __name__ == '__main__':
     # 加载模型
     if torch.cuda.is_available():
         FoV_net = FoV_net.cuda()
-    if not os.path.exists(args.model_path):
-        exit("model path doesn't exist")
-    # modelPath = args.model_path + f"convlstm_offline_{videoName.lower()}_1_1s.pth"
-    modelPath = args.model_path + \
-        f"convlstm_offline_skiing_1_1s.pth"
+    modelPath = f".\model\convlstm_offline_skiing_1_1s.pth"
     if not os.path.exists(modelPath):
         exit(f"{modelPath} doesn't exit!")
 

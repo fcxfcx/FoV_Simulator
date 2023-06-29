@@ -4,9 +4,7 @@ import pickle
 import bisect
 import torch
 import cv2
-from arguments import get_args
 
-# CALCULATE DEGREE DISTANCE BETWEEN TWO 3D VECTORS
 
 
 def unit_vector(vector):
@@ -20,7 +18,7 @@ def degree_distance(v1, v2):
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))/np.pi * 180
 
 
-
+# 计算一个vector的俯仰角
 def vector_to_ang(_v):
     _v = np.array(_v)
     # degree between v and [0, 1, 0]
@@ -37,8 +35,6 @@ def vector_to_ang(_v):
     return theta, phi
 
 # 根据角度得到二维平面的视点坐标
-
-
 def ang_to_geoxy(_theta, _phi, _h, _w):
     x = _h/2.0 - (_h/2.0) * np.sin(_phi/180.0 * np.pi)
     temp = _theta
@@ -92,7 +88,7 @@ def get_sal_fix(time_array, saliency_maps, req, window=4, time_window=0.5):
     fixation_maps = np.array([create_fixation_map(
         past_pos, idx, H, W) for idx, _ in enumerate(past_pos)])
     headmap = np.array(
-        [cv2.GaussianBlur(item, (args.gblur_size_width, args.gblur_size_high), 0) for item in fixation_maps])
+        [cv2.GaussianBlur(item, (5, 5), 0) for item in fixation_maps])
     fix_maps = mmscaler.fit_transform(
         headmap.ravel().reshape(-1, 1)).reshape(headmap.shape)
 
@@ -122,6 +118,3 @@ def de_interpolate(raw_tensor, N):
     for idx in range(10):
         out = out + raw_tensor[:, idx::10, idx::10]
     return out
-
-
-args = get_args()

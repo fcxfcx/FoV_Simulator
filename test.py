@@ -52,15 +52,6 @@ def get_map_test(index):
     return fixation_maps, fix_maps
 
 
-def get_gaze_point(map):
-    H = len(map)
-    W = len(map[0])
-    for i in range(H):
-        for j in range(W):
-            if map[i][j] == 1:
-                return i, j
-
-
 if __name__ == '__main__':
     # for i in range(1,10):
     #     get_data_test(i)
