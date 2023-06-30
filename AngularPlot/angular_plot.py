@@ -1,11 +1,11 @@
 import math
-import pyquaternion
 from pyquaternion import Quaternion
 import csv
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from scipy.spatial.transform import Rotation
+import pandas as pd
+import seaborn as sns
 
 def calculate_rotation(quat1, quat2):
     """计算两个四元数之间的角度差值
@@ -45,18 +45,32 @@ def calculate_rotation(quat1, quat2):
     return pitch, yaw, d, d_deg
 
 def quart_to_rpy(x, y, z, w):
+    """由四元数计算欧拉角
+
+    Args:
+        x (float): 四元数x
+        y (float): 四元数y
+        z (float): 四元数z
+        w (float): 四元数w
+
+    Returns:
+        float: 欧拉角对应的roll,pitch,yaw
+    """
+    # 下面计算的是分别绕x轴，y轴和z轴的旋转，y轴对应偏航，z轴对应俯仰
     roll = math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y))
-    pitch = math.asin(2 * (w * y - x * z))
-    yaw = math.atan2(2 * (w * z + x * y), 1 - 2 * (z * z + y * y))
+    yaw = math.asin(2 * (w * y - x * z))
+    pitch = math.atan2(2 * (w * z + x * y), 1 - 2 * (z * z + y * y))
     return roll, pitch, yaw
 
-def angular_plot():
-    for video_id in range(1):
-        for user_id in range(1,2):
+def angular_data():
+    """为每个视频的每个用户保存俯仰角、偏航角和角速度数据
+    """
+    for video_id in range(9):
+        for user_id in range(1,49):
             # 构建文件夹
-            figure_path = "./AngularPlot/Figure/video_"+ str(video_id) +"/user_" + str(user_id)
-            if not os.path.exists(figure_path):
-                os.makedirs(figure_path)
+            data_path = "./AngularPlot/Data/video_"+ str(video_id) +"/user_" + str(user_id)
+            if not os.path.exists(data_path):
+                os.makedirs(data_path)
 
             pitch_data, yaw_data, degree_data= [],[],[]
             q_data = get_quaternion_from_csv(user_id, video_id)
@@ -73,32 +87,67 @@ def angular_plot():
                 segment_temp.append([pitch,yaw,d_deg])
                 count += 1
                 # 一个segment结束的时候，清理temp数据并填入一条绘图数据
-                if count == 7 or index==len(q_data)-1:
+                if count == 8 or index==len(q_data)-1:
                     average = segment_average(segment_temp)
                     pitch_data.append(average[0])
                     yaw_data.append(average[1])
                     degree_data.append(average[2])
                     segment_temp = []
                     count = 0
-            # 绘制CDF图
-            cdf_plot(data=pitch_data, save_path=figure_path+"/pitch_cdf.png")
-            cdf_plot(data=yaw_data,save_path=figure_path+"/yaw_cdf.png")
-            cdf_plot(data=degree_data, save_path=figure_path+"/degree_velocity_cdf.png")
-            print("finish")
+            # 保存数据
+            f1 = open(data_path+"/pitch.csv", 'w', encoding="utf-8", newline="")
+            f2 = open(data_path+"/yaw.csv", 'w', encoding="utf-8", newline="")
+            f3 = open(data_path+"/degree_velocity.csv", 'w', encoding="utf-8", newline="")
+            save_data(f1, pitch_data)
+            save_data(f2, yaw_data)
+            save_data(f3, degree_data)
+        print("finish with video "+str(video_id))
 
+def save_data(file, data):
+    csv_writer = csv.writer(file)
+    csv_writer.writerow(["index","degree"])
+    index = 0
+    for item in data:
+        csv_writer.writerow([index, item])
+        index += 1
+    file.close()
 
-def cdf_plot(data, save_path):
-        sorted_data = np.sort(data)
-        # 计算CDF值
-        cdf = np.cumsum(sorted_data) / np.sum(sorted_data)
-        # 绘制CDF图
-        plt.plot(sorted_data, cdf, label='CDF')
-        plt.xlabel('Data')
-        plt.ylabel('CDF')
-        plt.title('Cumulative Distribution Function')
-        plt.legend()
-        plt.savefig(save_path)
-        plt.close()
+def cdf_plot(plot_type):
+    num_videos = 9
+    num_users = 9
+    plt.figure(dpi=400)
+    # 针对同一用户的不同视频绘图
+    for index in range(num_videos):
+        user_file = "./AngularPlot/Data/video_"+str(index)+"/user_1/"+plot_type+".csv" 
+        user_current = pd.read_csv(user_file)
+        data = user_current['degree']
+        sns.ecdfplot(data=data,label='Video_'+str(index))
+    # 添加标签和标题
+    plt.xlabel(plot_type)
+    plt.ylabel('CDF')
+    plt.title('Cumulative Distribution Function')
+    # 显示图例
+    plt.legend()
+    # 显示图形
+    plt.savefig("./AngularPlot/Figure/example/"+plot_type+"_video.png")
+    plt.close()
+
+    plt.figure(dpi=400)
+    # 针对同一视频的不同用户绘图
+    for index in range(1, num_users+1):
+        user_file = "./AngularPlot/Data/video_0/user_"+str(index)+"/"+plot_type+".csv" 
+        user_current = pd.read_csv(user_file)
+        sns.ecdfplot(data=user_current['degree'],label='User_'+str(index))
+    # 添加标签和标题
+    plt.xlabel(plot_type)
+    plt.ylabel('CDF')
+    plt.title('Cumulative Distribution Function')
+    # 显示图例
+    plt.legend()
+    # 显示图形
+    plt.savefig("./AngularPlot/Figure/example/"+plot_type+"_user.png")
+    plt.close()
+
 
 def segment_average(segment_array):
     """计算一个segment(2s)内的俯仰角总和，偏航角总合和球面角速度平均值
@@ -129,7 +178,6 @@ def get_quaternion_from_csv(user_id, video_id):
     """
     quaternion_Data = []
     UserFile = "./vr-dataset/Experiment_1/" + str(user_id) + "/video_"+ str(video_id) +".csv"
-    print('Load user\'s excel quaternion info from', UserFile)
     
     with open(UserFile) as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -145,4 +193,6 @@ def get_quaternion_from_csv(user_id, video_id):
 
 
 if __name__ == '__main__':
-    angular_plot()
+    cdf_plot("pitch")
+    cdf_plot("yaw")
+    cdf_plot("degree_velocity")
