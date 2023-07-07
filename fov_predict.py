@@ -63,11 +63,9 @@ def index_to_xyz(pre_image: np.ndarray):
 # 从csv中获取数据
 
 
-def get_csv(userId):
+def get_csv(userId, videoId):
     Userdata = []
-    UserFile = './vr-dataset/Experiment_1/' + str(userId) + "/video_1.csv"
-    print('Load user\'s excel info from', UserFile)
-
+    UserFile = './vr-dataset/Experiment_1/' + str(userId) + "/video_"+str(videoId)+".csv"
     with open(UserFile) as csvfile:
         csv_reader = csv.reader(csvfile)
         next(csv_reader)

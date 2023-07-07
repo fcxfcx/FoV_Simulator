@@ -114,14 +114,20 @@ def save_data(file, data):
 
 def cdf_plot(plot_type):
     num_videos = 9
-    num_users = 9
+    num_users = 48
     plt.figure(dpi=400)
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22']
+    sns.set_palette(colors)
+    data = []
     # 针对同一用户的不同视频绘图
-    for index in range(num_videos):
-        user_file = "./AngularPlot/Data/video_"+str(index)+"/user_1/"+plot_type+".csv" 
-        user_current = pd.read_csv(user_file)
-        data = user_current['degree']
-        sns.ecdfplot(data=data,label='Video_'+str(index))
+    for video_index in range(num_videos):
+        for user_index in range(1,num_users+1):
+            user_file = "./AngularPlot/Data/video_"+str(video_index)+"/user_"+str(user_index)+"/"+plot_type+".csv" 
+            user_current = pd.read_csv(user_file)
+            data.append(user_current['degree'])
+        data= pd.concat(data)   
+        sns.ecdfplot(data=data,label='Video_'+str(video_index))
+        data = []
     # 添加标签和标题
     plt.xlabel(plot_type)
     plt.ylabel('CDF')
@@ -132,12 +138,17 @@ def cdf_plot(plot_type):
     plt.savefig("./AngularPlot/Figure/example/"+plot_type+"_video.png")
     plt.close()
 
+    data = []
     plt.figure(dpi=400)
     # 针对同一视频的不同用户绘图
-    for index in range(1, num_users+1):
-        user_file = "./AngularPlot/Data/video_0/user_"+str(index)+"/"+plot_type+".csv" 
-        user_current = pd.read_csv(user_file)
-        sns.ecdfplot(data=user_current['degree'],label='User_'+str(index))
+    for user_index in range(1, 9):
+        for video_index in range(num_videos):
+            user_file = "./AngularPlot/Data/video_"+str(video_index)+"/user_"+str(user_index)+"/"+plot_type+".csv" 
+            user_current = pd.read_csv(user_file)
+            data.append(user_current['degree'])
+        data= pd.concat(data)
+        sns.ecdfplot(data=data,label='User_'+str(user_index))
+        data = []
     # 添加标签和标题
     plt.xlabel(plot_type)
     plt.ylabel('CDF')
@@ -148,6 +159,41 @@ def cdf_plot(plot_type):
     plt.savefig("./AngularPlot/Figure/example/"+plot_type+"_user.png")
     plt.close()
 
+def kde_plot(plot_type):
+    num_videos = 9
+    num_users = 9
+    plt.figure(dpi=400)
+    # 针对同一用户的不同视频绘图
+    for index in range(num_videos):
+        user_file = "./AngularPlot/Data/video_"+str(index)+"/user_1/"+plot_type+".csv" 
+        user_current = pd.read_csv(user_file)
+        data = user_current['degree']
+        sns.kdeplot(data=data,label='Video_'+str(index), cut=0, cumulative=True)
+    # 添加标签和标题
+    plt.xlabel(plot_type)
+    plt.ylabel('CDF')
+    plt.title('Cumulative Distribution Function')
+    # 显示图例
+    plt.legend()
+    # 显示图形
+    plt.savefig("./AngularPlot/Figure/example/kde/"+plot_type+"_video.png")
+    plt.close()
+
+    plt.figure(dpi=400)
+    # 针对同一视频的不同用户绘图
+    for index in range(1, num_users+1):
+        user_file = "./AngularPlot/Data/video_0/user_"+str(index)+"/"+plot_type+".csv" 
+        user_current = pd.read_csv(user_file)
+        sns.kdeplot(data=user_current['degree'],label='User_'+str(index), cut = 0, cumulative=True)
+    # 添加标签和标题
+    plt.xlabel(plot_type)
+    plt.ylabel('CDF')
+    plt.title('Cumulative Distribution Function')
+    # 显示图例
+    plt.legend()
+    # 显示图形
+    plt.savefig("./AngularPlot/Figure/example/kde/"+plot_type+"_user.png")
+    plt.close()
 
 def segment_average(segment_array):
     """计算一个segment(2s)内的俯仰角总和，偏航角总合和球面角速度平均值
