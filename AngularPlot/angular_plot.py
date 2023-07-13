@@ -119,6 +119,7 @@ def cdf_plot(plot_type):
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22']
     sns.set_palette(colors)
     data = []
+    sns.set(font='Times New Roman')
     # 针对同一用户的不同视频绘图
     for video_index in range(num_videos):
         for user_index in range(1,num_users+1):
@@ -126,15 +127,19 @@ def cdf_plot(plot_type):
             user_current = pd.read_csv(user_file)
             data.append(user_current['degree'])
         data= pd.concat(data)   
-        sns.ecdfplot(data=data,label='Video_'+str(video_index))
+        sns.ecdfplot(data=data,label='Video '+str(video_index))
         data = []
     # 添加标签和标题
-    plt.xlabel(plot_type)
+    if plot_type=="degree_velocity":
+        plt.xlabel("degree velocity")
+    else:
+        plt.xlabel(plot_type)
     plt.ylabel('CDF')
-    plt.title('Cumulative Distribution Function')
     # 显示图例
     plt.legend()
-    # 显示图形
+    if plot_type =="degree_velocity":
+        plt.axis([0,160,0,1])
+    # 显示图形  
     plt.savefig("./AngularPlot/Figure/example/"+plot_type+"_video.png")
     plt.close()
 
@@ -147,14 +152,18 @@ def cdf_plot(plot_type):
             user_current = pd.read_csv(user_file)
             data.append(user_current['degree'])
         data= pd.concat(data)
-        sns.ecdfplot(data=data,label='User_'+str(user_index))
+        sns.ecdfplot(data=data,label='User '+str(user_index))
         data = []
     # 添加标签和标题
-    plt.xlabel(plot_type)
+    if plot_type=="degree_velocity":
+        plt.xlabel("degree velocity")
+    else:
+        plt.xlabel(plot_type)
     plt.ylabel('CDF')
-    plt.title('Cumulative Distribution Function')
     # 显示图例
     plt.legend()
+    if plot_type =="degree_velocity":
+        plt.axis([0,160,0,1])
     # 显示图形
     plt.savefig("./AngularPlot/Figure/example/"+plot_type+"_user.png")
     plt.close()
@@ -164,15 +173,18 @@ def kde_plot(plot_type):
     num_users = 9
     plt.figure(dpi=400)
     # 针对同一用户的不同视频绘图
+    sns.set(font='Times New Roman')
     for index in range(num_videos):
         user_file = "./AngularPlot/Data/video_"+str(index)+"/user_1/"+plot_type+".csv" 
         user_current = pd.read_csv(user_file)
         data = user_current['degree']
-        sns.kdeplot(data=data,label='Video_'+str(index), cut=0, cumulative=True)
+        sns.kdeplot(data=data,label='Video '+str(index), cut=0, cumulative=True)
     # 添加标签和标题
-    plt.xlabel(plot_type)
-    plt.ylabel('CDF')
-    plt.title('Cumulative Distribution Function')
+    if plot_type=="degree_velocity":
+        plt.xlabel("degree velocity")
+    else:
+        plt.xlabel(plot_type)
+    plt.ylabel('KDE')
     # 显示图例
     plt.legend()
     # 显示图形
@@ -184,11 +196,13 @@ def kde_plot(plot_type):
     for index in range(1, num_users+1):
         user_file = "./AngularPlot/Data/video_0/user_"+str(index)+"/"+plot_type+".csv" 
         user_current = pd.read_csv(user_file)
-        sns.kdeplot(data=user_current['degree'],label='User_'+str(index), cut = 0, cumulative=True)
+        sns.kdeplot(data=user_current['degree'],label='User '+str(index), cut = 0, cumulative=True)
     # 添加标签和标题
-    plt.xlabel(plot_type)
-    plt.ylabel('CDF')
-    plt.title('Cumulative Distribution Function')
+    if plot_type=="degree_velocity":
+        plt.xlabel("degree velocity")
+    else:
+        plt.xlabel(plot_type)
+    plt.ylabel('KDE')
     # 显示图例
     plt.legend()
     # 显示图形
