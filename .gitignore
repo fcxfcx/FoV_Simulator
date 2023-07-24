@@ -7,3 +7,6 @@ AngularPlot/Data
 TileFocus/Data
 TileFocus/Figure
 tileSelect/
+AlgoEvaluateData/
+Predict/
+*.pdf

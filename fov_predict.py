@@ -2,6 +2,7 @@ import time
 from data_process import *
 import convlstm
 import os
+import pandas as pd
 import csv
 from pyquaternion import Quaternion
 
@@ -17,7 +18,8 @@ FoV_net = convlstm.ConvLSTM_model(input_dim=2,
 def FoV(data_batch):
     # for item in req:
     #     print(item)
-    inputs, pre_time = get_sal_fix(time_array_list[0], sal_maps_list[0], data_batch)
+    inputs, pre_time = get_sal_fix(
+        time_array_list[0], sal_maps_list[0], data_batch)
 
     # return jsonify([pre_time, [-0.7,0,-0.7]])
     # output_list 每个时间点最后一层隐层结果: list
@@ -27,7 +29,7 @@ def FoV(data_batch):
     output_list, output_last, conv_output, conv_output_list_ret = FoV_net(
         inputs)
     pre_x, pre_y = return_fov(conv_output)
-    return pre_time, pre_x, pre_y
+    return pre_time, pre_x, pre_y, conv_output[0, 0].detach().cpu().numpy()
 
 
 def return_fov(predict_array):
@@ -65,7 +67,8 @@ def index_to_xyz(pre_image: np.ndarray):
 
 def get_csv(userId, videoId):
     Userdata = []
-    UserFile = './vr-dataset/Experiment_1/' + str(userId) + "/video_"+str(videoId)+".csv"
+    UserFile = './vr-dataset/Experiment_1/' + \
+        str(userId) + "/video_"+str(videoId)+".csv"
     with open(UserFile) as csvfile:
         csv_reader = csv.reader(csvfile)
         next(csv_reader)
@@ -76,7 +79,7 @@ def get_csv(userId, videoId):
             # 每隔250ms采集一次
             if t_temp > float(row[1]):
                 continue
-            
+
             q = Quaternion([float(row[5]), -float(row[4]),
                            float(row[3]), -float(row[2])])
             new_vec = q.rotate(v0)
@@ -106,23 +109,28 @@ if __name__ == '__main__':
     # 加载模型
     if torch.cuda.is_available():
         FoV_net = FoV_net.cuda()
+    else:
+        FoV_net = FoV_net.to(device="cpu")
     modelPath = f".\model\convlstm_offline_skiing_1_1s.pth"
     if not os.path.exists(modelPath):
         exit(f"{modelPath} doesn't exit!")
 
-    FoV_net.load_state_dict(torch.load(modelPath))
+    FoV_net.load_state_dict(torch.load(
+        modelPath, map_location=torch.device('cpu')))
     print('Loading model from', modelPath)
     print("Total number of parameters in networks is {}".format(
         sum(x.numel() for x in FoV_net.parameters())))
     FoV_net.eval()
 
     # 用户id
-    for index in range(1,10):
+    for index in range(1, 49):
         # 读取源数据并喂给预测模型
-        raw_data = get_csv(index)
+        raw_data = get_csv(index, 1)
+        map_list = []
         data_batch = []
         # 写入新的csv中
-        f = open("./Predict/user_"+str(index)+".csv", 'w', encoding="utf-8", newline="")
+        f = open("./Predict/user_"+str(index)+".csv",
+                 'w', encoding="utf-8", newline="")
         csv_writer = csv.writer(f)
         csv_writer.writerow(["time", "H", "W"])
         H, W = 9, 16
@@ -130,15 +138,14 @@ if __name__ == '__main__':
             data_batch.append(item)
             if len(data_batch) == 4:
                 # 预测
-                t, x, y = FoV(data_batch)
+                t, x, y, predict_map = FoV(data_batch)
                 row = [t, x, y]
                 csv_writer.writerow(row)
-
+                map_list.append(predict_map)
                 # 去掉最老的数据，加入新数据
-                data_batch= data_batch[1:]
+                data_batch = data_batch[1:]
         f.close()
-
-
-        
-        
-    
+        matrix_series = pd.Series(map_list)
+        csv_file = "./Predict/Map/user_"+str(index)+".csv"
+        matrix_series.to_csv(csv_file, index=False)
+        map_list = []
